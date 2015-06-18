@@ -1,0 +1,23 @@
+table {
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.ticboard {
+	padding-top: 40px;
+}
+
+.square {
+	width: 80px;
+	height: 80px; 
+}
+
+.v {
+	border-left: 2px solid; 
+	border-right: 2px solid;
+}
+
+.h {
+	border-top: 2px solid;
+	border-bottom: 2px solid; 
+}

@@ -1,0 +1,30 @@
+<div>
+	<h4>Player Info</h4>
+	<form ng-submit="ctrl.submit()" name="playerForm">
+		<div class="row">
+			<div ng-repeat="obj in ctrl.players track by $index" class="col-md-4 col-md-offset-4">	
+				<div class="form-group">
+					Player <span ng-bind="obj.id + 1"></span>:
+					<input type="text"
+						   class="form-control"
+						   placeholder="Player Name"
+						   ng-attr-id="{{ 'player-' + obj.id }}"
+						   ng-model="obj.name"
+						   required>
+					<input type="text"
+						   class="form-control"
+						   placeholder="Single letter mark for the board"
+						   ng-attr-id="{{ 'mark-' + obj.id }}"
+						   ng-model="obj.symbol"
+						   ng-maxlength="1">
+				</div>
+			</div>	
+		</div>
+		<div>
+			<input type="submit" class="btn btn-success" value="Add Players" ng-disabled="playerForm.$invalid">
+			<div ng-if="ctrl.duplicates === false">
+				<p class="text-danger">Please make sure names and marks are unique between players</p>
+			</div>
+		</div>
+	</form>
+</div>

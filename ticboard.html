@@ -1,0 +1,22 @@
+<div ng-controller="gameController as game">
+	<p>{{game.first.name}}'s turn!</p>
+	<div class="ticboard">
+		<table>
+			<tr>
+				<td id="0,0" class="square" onclick="clicked(id)"></td>
+				<td id="0,1" class="square v" onclick="clicked(id)"></td>
+				<td id="0,2" class="square" onclick="clicked(id)"></td>
+			</tr>
+			<tr>
+				<td id="1,0" class="square h" onclick="clicked(id)"></td>
+				<td id="1,1" class="square v h" onclick="clicked(id)"></td>
+				<td id="1,2" class="square h" onclick="clicked(id)"></td>
+			</tr>
+			<tr>
+				<td id="2,0" class="square" onclick="clicked(id)"></td>
+				<td id="2,1" class="square v" onclick="clicked(id)"></td>
+				<td id="2,2" class="square" onclick="clicked(id)"></td>
+			</tr>
+		</table>
+	</div>
+</div>
