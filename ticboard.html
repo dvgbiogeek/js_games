@@ -1,22 +1,36 @@
 <div ng-controller="gameController as game">
-	<p>{{game.first.name}}'s turn!</p>
+	<div ng-if="game.showFirst">
+		<h4 class="text-primary">{{game.firstPlayer.name}} goes first!</h4>
+	</div>
+	<div ng-if="game.playTime">
+		<h4 class="text-primary">{{game.displayTurn.name}}'s turn</h4>
+	</div>
 	<div class="ticboard">
 		<table>
 			<tr>
-				<td id="0,0" class="square" onclick="clicked(id)"></td>
-				<td id="0,1" class="square v" onclick="clicked(id)"></td>
-				<td id="0,2" class="square" onclick="clicked(id)"></td>
+				<td id="0" class="square" ng-click="game.clicked($event)">{{game.gameBoard[0]}}</td>
+				<td id="1" class="square v" ng-click="game.clicked($event)">{{game.gameBoard[1]}}</td>
+				<td id="2" class="square" ng-click="game.clicked($event)">{{game.gameBoard[2]}}</td>
 			</tr>
 			<tr>
-				<td id="1,0" class="square h" onclick="clicked(id)"></td>
-				<td id="1,1" class="square v h" onclick="clicked(id)"></td>
-				<td id="1,2" class="square h" onclick="clicked(id)"></td>
+				<td id="3" class="square h" ng-click="game.clicked($event)">{{game.gameBoard[3]}}</td>
+				<td id="4" class="square v h" ng-click="game.clicked($event)">{{game.gameBoard[4]}}</td>
+				<td id="5" class="square h" ng-click="game.clicked($event)">{{game.gameBoard[5]}}</td>
 			</tr>
 			<tr>
-				<td id="2,0" class="square" onclick="clicked(id)"></td>
-				<td id="2,1" class="square v" onclick="clicked(id)"></td>
-				<td id="2,2" class="square" onclick="clicked(id)"></td>
+				<td id="6" class="square" ng-click="game.clicked($event)">{{game.gameBoard[6]}}</td>
+				<td id="7" class="square v" ng-click="game.clicked($event)">{{game.gameBoard[7]}}</td>
+				<td id="8" class="square" ng-click="game.clicked($event)">{{game.gameBoard[8]}}</td>
 			</tr>
 		</table>
+	</div>
+	<div ng-show="game.playerWins">
+		<h4 class="text-primary">{{game.player.name}} has won!</h4>
+	</div>
+	<div ng-show="game.stalemate">
+		<h4 class="text-danger">It's a stalemate! Better play again.</h4>
+	</div>
+	<div>
+		<button class="btn btn-success" ng-click="game.newGame()">New Game</button>
 	</div>
 </div>
