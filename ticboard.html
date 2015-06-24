@@ -1,8 +1,8 @@
 <div ng-controller="gameController as game">
-	<div ng-if="game.showFirst">
+	<div ng-show="game.showFirst">
 		<h4 class="text-primary">{{game.firstPlayer.name}} goes first!</h4>
 	</div>
-	<div ng-if="game.playTime">
+	<div ng-show="game.playTime">
 		<h4 class="text-primary">{{game.displayTurn.name}}'s turn</h4>
 	</div>
 	<div class="ticboard">
