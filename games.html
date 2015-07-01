@@ -1,5 +1,10 @@
 <div ng-controller="playerController as ctrl">
-	<button class="btn btn-success" ng-click="ctrl.getPlayers(2)">Tic Tac Toe</button>
+	<div id="button-extra" class="row">
+		<button class="btn btn-success" ng-click="ctrl.getPlayers(2, 'tic')">Tic Tac Toe</button>
+	</div>
+	<div id="button-extra" class="row">
+		<button class="btn btn-success" ng-click="ctrl.getPlayers(1, 'battle')">Single Player Battleship</button>
+	</div>
 	<div ng-show="ctrl.genPlayer">
 		<div ng-include="ctrl.playerTemplate"></div>
 	</div>

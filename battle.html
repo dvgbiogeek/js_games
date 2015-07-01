@@ -1,0 +1,9 @@
+<div>
+	<h3>Battleship!</h3>
+	<h5>Enemy Board</h5>
+	<table>
+		<tr ng-repeat="row in battle.htmlBoard">
+			<td id="{{ele}}" class="grid" ng-repeat="ele in row" ng-click="battle.clicked($event)">{{battle.gameBoard[ele]}}</td>
+		</tr>
+	</table>
+</div>

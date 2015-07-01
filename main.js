@@ -1,13 +1,14 @@
 angular.module('gameApp', ['ngRoute'])
 
-	.controller('playerController', ['$location', 'PlayerService',
-		function($location, PlayerService) {
+	.controller('playerController', ['$location', 'PlayerService', 'GameService',
+		function($location, PlayerService, GameService) {
 		this.genPlayer = false;
 		this.duplicates = true;
 		
 		// Get player information
-		this.getPlayers = function(number) {
+		this.getPlayers = function(number, game) {
 			this.genPlayer = true;
+			this.game = GameService.gameSelected(game);
 			this.players = PlayerService.generatePlayers(number);
 		};
 
@@ -15,14 +16,15 @@ angular.module('gameApp', ['ngRoute'])
 		this.submit = function() {
 			this.duplicates = PlayerService.playersValid(this.players);
 			PlayerService.playerList(this.players);
-			$location.path('/tic');
+			// currently goes to TicTacToe - will need to generalize
+			$location.path(GameService.gameLocation());
 		};
 		// Template for getting player information
 		this.playerTemplate = 'player.html';
 	
 	}])
-	.controller('gameController', ['PlayerService', 'BoardService', 'TicTacToeService',
-		function(PlayerService, BoardService, TicTacToeService) {
+	.controller('gameController', ['PlayerService', 'GameService','BoardService', 'TicTacToeService',
+		function(PlayerService, GameService, BoardService, TicTacToeService) {
 		var ticPlayers = PlayerService.getPlayers();
 		var first = PlayerService.firstPlayer(ticPlayers, 2);
 		var self = this;
@@ -49,7 +51,7 @@ angular.module('gameApp', ['ngRoute'])
 			this.player = PlayerService.activePlayer();
 			this.gameBoard = BoardService.getBoard();
 			var elementId = Number(objId.toElement.id);
-			if (BoardService.addMark(elementId, this.player)) {
+			if (BoardService.addMark(elementId, this.player.symbol)) {
 				PlayerService.nextPlayer();
 			} else {
 				return;
@@ -68,6 +70,21 @@ angular.module('gameApp', ['ngRoute'])
 		// Template for the board
 		this.ticTemplate = 'ticboard.html';
 	}])
+	
+	.controller('battleController', ['PlayerService', 'BattleService', 'BoardService',
+		function(PlayerService, BattleService, BoardService) {
+		var self = this;
+		self.board = BattleService.newBoard();
+		self.gameBoard = BattleService.getBoard();
+		self.htmlBoard = BoardService.getHtmlBoard(8);
+
+		BattleService.addShips();
+
+		self.clicked = function(objId) {
+			var elementId = Number(objId.toElement.id);
+			console.log(elementId);
+		};
+	}])
 
 	.config(function($routeProvider) {
 		$routeProvider.when('/', {
@@ -76,12 +93,17 @@ angular.module('gameApp', ['ngRoute'])
 		})
 		.when('/tic', {
 			templateUrl: 'ticboard.html',
-			controller: 'gameController'
+			controller: 'gameController as game'
+		})
+		.when('/battle', {
+			templateUrl: 'battle.html',
+			controller: 'battleController as battle'
 		});
 	})
+
 	.factory('BoardService', [function() {
 		var board;
-		var array;
+		var htmlBoard;
 
 		return {
 			// retrieves the board
@@ -97,19 +119,150 @@ angular.module('gameApp', ['ngRoute'])
 				}
 				return board;
 			},
+			// sets up the board for display by html
+			getHtmlBoard: function(size) {
+				htmlBoard = [];
+				for (var i = 0; i < board.length; i++) {
+					if (i % size === 0) htmlBoard.push([]);
+					htmlBoard[htmlBoard.length - 1].push(i);
+				}
+				return htmlBoard;
+			},
 			// adds a mark to the board if the position is empty
-			addMark: function(elementId, player) {
+			addMark: function(elementId, mark) {
 				var markAdded;
 				if (board[elementId] === '') {
-					board[elementId] = player.symbol;
+					board[elementId] = mark;
 					markAdded = true;
 				} else {
 					markAdded = false;
 				}
 				return markAdded;
+			},
+			// convert board index to coordinates
+			posToCoordinates: function(pos, size) {
+				var x = pos % size;
+				var y = (pos - x) / size;
+				return {
+					x: x,
+					y: y
+				};
+			},
+			// convert coordinate position to board index
+			coordinatesToPos: function(x, y, size) {
+				pos = y * size + x;
+				return pos;
 			}
 		};
 	}])	
+
+	.factory('BattleService', ['BoardService', function(BoardService) {
+		// a list of ships objects in battleship
+		var shipTypes = [
+        	{"name": "Aircraft Carrier", "shipLength": 5, "health": 5, "sunk": false},
+        	{"name": "Battleship", "shipLength": 4, "health": 4, "sunk": false},
+        	{"name": "Destroyer", "shipLength": 3, "health": 3, "sunk": false},
+        	{"name": "Submarine", "shipLength": 3, "health": 3, "sunk": false},
+        	{"name": "Patrol Boat", "shipLength": 2, "health": 2, "sunk": false},
+    	];
+    	// board inherits all the methods from BoardService
+    	var board = Object.create(BoardService);
+    	var size = 8;
+
+		return {
+			// retrieves the board
+			getBoard: function() {
+				return board.getBoard();
+			},
+			// generates a new board
+			newBoard: function() {
+				return board.newBoard(size);
+			},
+			// adds all the ships to the board in random locations - checks if position 
+			// is valid prior to adding a ship to the board
+			addShips: function() {
+				var location;
+				var verticalOrHorizontal;
+				var shipName;
+				var valid;
+				var shipsPlaced = 0;
+				var shipOb = 0;
+
+				while (shipsPlaced < shipTypes.length) {
+					var ship = shipTypes[shipOb];
+					shipName = shipTypes[shipOb].name[0];
+					setLocation();
+					vertOrHor();
+					valid = verifyPlacement(ship);
+					while (valid) {
+						placeShip(ship);
+						shipsPlaced++;
+						shipOb++;
+						valid = false;
+					}
+				}		
+
+				// function to place ships on the board
+				function placeShip(ship) {
+					if (verticalOrHorizontal === 0) {
+						for (i = 0; i < ship.shipLength; i++) {
+							board.addMark(location + i, shipName);
+						}
+					} else if (verticalOrHorizontal === 1) {
+						for (i = 0; i < ship.shipLength; i++) {
+							board.addMark(location + i * size, shipName);	
+						}	
+					} 						
+				}
+
+				// a function that obtains a random location on the board
+				function setLocation() {
+					location = Math.floor(Math.random() * board.getBoard().length);
+				}
+
+				// function that determines if the ship should be vertical or horizontal on the board 
+				function vertOrHor() {
+					verticalOrHorizontal = Math.floor(Math.random() * 2);
+				}
+
+				// function verifies the ships position
+				function verifyPlacement(ship) {
+					var viable;
+					// converts the board position to coordinates
+					var coords = board.posToCoordinates(location, size);
+					
+					// first check if the ship is horizontal and the end of the ship is within the boundries of the board
+					if (verticalOrHorizontal === 0 && coords.x + ship.shipLength < size + 1) {
+						for (i = 0; i < ship.shipLength; i++) {	
+							// then check if the ship will overlap with other ships
+							if (board.getBoard()[location + i] !== "") {
+								// if so, the location is not viable
+								viable = false;
+							}
+						}
+					// then check if the ship is vertical and within the boundry of the board
+					} else if (verticalOrHorizontal === 1 && coords.y + ship.shipLength < size + 1) {
+						for (i = 0; i < ship.shipLength; i++) {	
+							// if there is overlap with other ships the position is not viable
+							if (board.getBoard()[location + i * size]) {
+								viable = false;
+							}
+						}
+					// if the ship is not within the boundries of the board, the position is not viable
+					} else {
+						viable = false;
+					}
+					if (viable === false) {
+						return viable;
+					} else {
+						viable = true;
+						return viable;
+					}
+				}
+	
+			}
+		};
+	}])
 
 	.factory('TicTacToeService', [function() {
 
@@ -153,6 +306,7 @@ angular.module('gameApp', ['ngRoute'])
 					return false;
 				}					
 			},
+			// checks if the game is a stalemate
 			isStalemate: function(board) {
 				var stalemate;
 				for (i = 0; i < board.length; i++) {
@@ -167,6 +321,33 @@ angular.module('gameApp', ['ngRoute'])
 		};
 	}])
 
+	// factory for setting up the game handler
+	.factory('GameService', ['$location', function($location) {
+		var selectGame;
+		var gameUrl;
+
+		return {
+			// returns the selected game
+			gameSelected: function(game) {
+				selectGame = game;
+				return;
+			},
+			// retrieves the selected game
+			getGame: function() {
+				return selectGame;
+			},
+			// redirects the user to their desired game
+			gameLocation: function() {
+				if (selectGame == "tic") {
+					gameUrl = "/tic";
+				} else if (selectGame == "battle") {
+					gameUrl = "/battle";
+				}
+				return gameUrl;
+			}
+		};
+	}])
+
 	.factory('PlayerService', [function() {
 		var players;
 		var turn;
@@ -176,7 +357,7 @@ angular.module('gameApp', ['ngRoute'])
 			// Saves the list of players as a variable on the factory
 			playerList: function(playerArray) {
 				players = playerArray;
-				return players;
+				return;
 			},
 			// retreives the list of players
 			getPlayers: function() {

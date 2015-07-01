@@ -2,7 +2,9 @@ table {
 	margin-left: auto;
 	margin-right: auto;
 }
-
+#button-extra {
+	padding: 5px;
+}
 .ticboard {
 	padding-top: 40px;
 	padding-bottom: 20px;
@@ -21,4 +23,9 @@ table {
 .h {
 	border-top: 2px solid;
 	border-bottom: 2px solid; 
+}
+.grid {
+	width: 40px;
+	height: 40px;
+	border: 1px solid; 
 }
