@@ -1,9 +1,30 @@
 <div>
 	<h3>Battleship!</h3>
 	<h5>Enemy Board</h5>
-	<table>
-		<tr ng-repeat="row in battle.htmlBoard">
-			<td id="{{ele}}" class="grid" ng-repeat="ele in row" ng-click="battle.clicked($event)">{{battle.gameBoard[ele]}}</td>
-		</tr>
-	</table>
+	<div class="row">
+		<div class="col-md-6">	
+			<table>
+				<tr ng-repeat="row in battle.htmlBoard">
+					<td id="{{ele}}" class="grid" ng-repeat="ele in row" ng-click="battle.clicked($event)">	{{battle.gameBoard[ele]}}</td>
+				</tr>
+			</table>
+		</div>
+		<div class="col-md-6">
+			<table>
+				<tr ng-repeat="row in battle.htmlPlayerBoard">
+					<td id="{{ele}}" class="grid" ng-repeat="ele in row" ng-click="battle.clicked($event)">	{{battle.playerGameBoard[ele]}}</td>
+				</tr>
+			</table>			
+		</div>
+	</div>
+	<div class="row">
+		<div class="text-center" ng-show="battle.shipSunk">
+			<h4 class="text-primary">You sunk the {{battle.ship.name}}!</h4>
+		</div>
+	</div>
+	<div class="row">
+		<div class="text-center" ng-show="battle.playerWins">
+			<h4 class="text-primary">You have won!</h4>
+		</div>
+	</div>	
 </div>

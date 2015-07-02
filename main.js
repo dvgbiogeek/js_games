@@ -23,7 +23,7 @@ angular.module('gameApp', ['ngRoute'])
 		this.playerTemplate = 'player.html';
 	
 	}])
-	.controller('gameController', ['PlayerService', 'GameService','BoardService', 'TicTacToeService',
+	.controller('ticController', ['PlayerService', 'GameService','BoardService', 'TicTacToeService',
 		function(PlayerService, GameService, BoardService, TicTacToeService) {
 		var ticPlayers = PlayerService.getPlayers();
 		var first = PlayerService.firstPlayer(ticPlayers, 2);
@@ -37,8 +37,8 @@ angular.module('gameApp', ['ngRoute'])
 			self.firstPlayer = first;
 			var turnOffset = first.id;
 			self.activePlayer = this.firstPlayer; 
-			self.board = BoardService.newBoard(3);
-			self.gameBoard = BoardService.getBoard();
+			self.board = BoardService.newPlayerBoard(3);
+			self.gameBoard = BoardService.getPlayerBoard();
 		}
 		
 		startGame();
@@ -49,7 +49,7 @@ angular.module('gameApp', ['ngRoute'])
 			this.playTime = true;
 			this.displayTurn = PlayerService.displayPlayer();
 			this.player = PlayerService.activePlayer();
-			this.gameBoard = BoardService.getBoard();
+			this.gameBoard = BoardService.getPlayerBoard();
 			var elementId = Number(objId.toElement.id);
 			if (BoardService.addMark(elementId, this.player.symbol)) {
 				PlayerService.nextPlayer();
@@ -74,15 +74,32 @@ angular.module('gameApp', ['ngRoute'])
 	.controller('battleController', ['PlayerService', 'BattleService', 'BoardService',
 		function(PlayerService, BattleService, BoardService) {
 		var self = this;
-		self.board = BattleService.newBoard();
-		self.gameBoard = BattleService.getBoard();
-		self.htmlBoard = BoardService.getHtmlBoard(8);
+		self.playerWins = false;
+		self.board = BattleService.newShipBoard();
+		self.playerBoard = BattleService.newPlayerBoard();
+		self.gameBoard = BattleService.getShipBoard();
+		self.playerGameBoard = BattleService.getPlayerBoard();
+		self.htmlBoard = BoardService.getHtmlShipBoard(8);
+		self.htmlPlayerBoard = BoardService.getHtmlPlayerBoard(8);
 
 		BattleService.addShips();
 
 		self.clicked = function(objId) {
+			var ship;
+			var win;
 			var elementId = Number(objId.toElement.id);
-			console.log(elementId);
+			var hitOrMiss = BattleService.hitOrMiss(elementId);
+			this.shipSunk = false;
+
+			if (hitOrMiss === "hit") {
+				ship = BattleService.whichShip(elementId);
+				var shipHealth = BattleService.shipHealth(ship);
+				if (shipHealth === "sunk") {
+					this.shipSunk = true;
+					this.ship = ship;
+					this.playerWins = BattleService.playerWins();
+				}	
+			}
 		};
 	}])
 
@@ -93,7 +110,7 @@ angular.module('gameApp', ['ngRoute'])
 		})
 		.when('/tic', {
 			templateUrl: 'ticboard.html',
-			controller: 'gameController as game'
+			controller: 'ticController as tic'
 		})
 		.when('/battle', {
 			templateUrl: 'battle.html',
@@ -102,42 +119,82 @@ angular.module('gameApp', ['ngRoute'])
 	})
 
 	.factory('BoardService', [function() {
-		var board;
-		var htmlBoard;
+		var shipBoard;
+		var playerBoard;
+		var htmlShipBoard;
+		var htmlPlayerBoard;
+
+		function newBoard(board, size) {
+			console.log("newBoard called");
+			board = [];
+			var boardSize = size * size;
+			for (var i=0; i < boardSize; i++) {
+				board.push("");
+			}
+			return board;			
+		}
+
+		function buildHtmlBoard(htmlBoard, board, size) {
+			htmlBoard = [];
+			for (var i = 0; i < board.length; i++) {
+				if (i % size === 0) htmlBoard.push([]);
+				htmlBoard[htmlBoard.length - 1].push(i);
+			}
+			return htmlBoard;
+		}
 
 		return {
 			// retrieves the board
-			getBoard: function() {
-				return board;
+			getShipBoard: function() {
+				return shipBoard;
+			},
+			getPlayerBoard: function() {
+				return playerBoard;
 			},
 			// sets up a new empty square board 
-			newBoard: function(size) {
-				board = [];
+			newShipBoard: function(size) {
+				shipBoard = [];
 				var boardSize = size * size;
 				for (var i=0; i < boardSize; i++) {
-					board.push("");
+					shipBoard.push("");
 				}
-				return board;
+				return shipBoard;
 			},
-			// sets up the board for display by html
-			getHtmlBoard: function(size) {
-				htmlBoard = [];
-				for (var i = 0; i < board.length; i++) {
-					if (i % size === 0) htmlBoard.push([]);
-					htmlBoard[htmlBoard.length - 1].push(i);
+			newPlayerBoard: function(size) {
+				// return newBoard(playerBoard, size);
+				playerBoard = [];
+				var boardSize = size * size;
+				for (var i=0; i < boardSize; i++) {
+					playerBoard.push("");
 				}
-				return htmlBoard;
+				return playerBoard;
 			},
+			// sets up the board for display by html 
+			getHtmlShipBoard: function(size) {
+				return buildHtmlBoard(htmlShipBoard, shipBoard, size);
+			},
+			// sets up the board for display
+			getHtmlPlayerBoard: function(size) {
+				return buildHtmlBoard(htmlPlayerBoard, playerBoard, size);
+			},
+
 			// adds a mark to the board if the position is empty
 			addMark: function(elementId, mark) {
+				// markAdded variable is needed for TicTacToe
 				var markAdded;
-				if (board[elementId] === '') {
-					board[elementId] = mark;
+				if (playerBoard[elementId] === '') {
+					playerBoard[elementId] = mark;
 					markAdded = true;
 				} else {
 					markAdded = false;
 				}
 				return markAdded;
+			},
+			addShipMark: function(elementId, mark) {
+				shipBoard[elementId] = mark;
+			},
+			addHitOrMiss: function(elementId, mark) {
+				playerBoard[elementId] = mark;
 			},
 			// convert board index to coordinates
 			posToCoordinates: function(pos, size) {
@@ -148,11 +205,6 @@ angular.module('gameApp', ['ngRoute'])
 					y: y
 				};
 			},
-			// convert coordinate position to board index
-			coordinatesToPos: function(x, y, size) {
-				pos = y * size + x;
-				return pos;
-			}
 		};
 	}])	
 
@@ -166,17 +218,68 @@ angular.module('gameApp', ['ngRoute'])
         	{"name": "Patrol Boat", "shipLength": 2, "health": 2, "sunk": false},
     	];
     	// board inherits all the methods from BoardService
-    	var board = Object.create(BoardService);
+    	var shipBoard = Object.create(BoardService);
+    	var playerBoard = Object.create(BoardService);
     	var size = 8;
 
 		return {
-			// retrieves the board
-			getBoard: function() {
-				return board.getBoard();
+			// retrieves the board with ships from the shipBoard object
+			getShipBoard: function() {
+				return shipBoard.getShipBoard();
 			},
-			// generates a new board
-			newBoard: function() {
-				return board.newBoard(size);
+			// retrieves the player board from the playerBoard object
+			getPlayerBoard: function() {
+				return playerBoard.getPlayerBoard();
+			},
+			// generates a new board for ship placement
+			newShipBoard: function() {
+				return shipBoard.newShipBoard(size);
+			},
+			// generates a new player board
+			newPlayerBoard: function() {
+				return playerBoard.newPlayerBoard(size);
+			},
+			// determines if a player's play choice is a hit or miss
+			hitOrMiss: function(elementId) {
+				var hitLocation = shipBoard.getShipBoard()[elementId];
+				if (hitLocation === '') {
+					playerBoard.addHitOrMiss(elementId, '*');
+					return "miss";
+				} else {
+					playerBoard.addHitOrMiss(elementId, '$');
+					return "hit";
+				}
+				
+			},
+			// determines which ship was hit and returns the ship as an object
+			whichShip: function(elementId) {
+				var shipIndex = shipBoard.getShipBoard()[elementId];
+				for (var i = 0; i < shipTypes.length; i++) {
+					if (shipTypes[i].name[0] === shipIndex) {
+						hitShip = shipTypes[i];
+						return hitShip;
+					}
+				}
+			},
+			// function subtracts one heath from a ship object and if it is 0, updates the sunk attribute to false
+			shipHealth: function(shipOb) {
+				shipOb.health = shipOb.health - 1;
+				if (shipOb.health === 0) {
+					shipOb.sunk = true;
+					return "sunk";
+				}
+			},
+			// function check if a player has won by checking if the sunk attribute is false for each ship object
+			playerWins: function() {
+				var win;
+				for (var i = 0; i < shipTypes.length; i++) {
+					if (shipTypes[i].sunk === false) {
+						win = false;
+						return win;
+					}
+				}
+				win = true;
+				return win;	
 			},
 			// adds all the ships to the board in random locations - checks if position 
 			// is valid prior to adding a ship to the board
@@ -206,18 +309,18 @@ angular.module('gameApp', ['ngRoute'])
 				function placeShip(ship) {
 					if (verticalOrHorizontal === 0) {
 						for (i = 0; i < ship.shipLength; i++) {
-							board.addMark(location + i, shipName);
+							shipBoard.addShipMark(location + i, shipName);
 						}
 					} else if (verticalOrHorizontal === 1) {
 						for (i = 0; i < ship.shipLength; i++) {
-							board.addMark(location + i * size, shipName);	
+							shipBoard.addShipMark(location + i * size, shipName);	
 						}	
 					} 						
 				}
 
 				// a function that obtains a random location on the board
 				function setLocation() {
-					location = Math.floor(Math.random() * board.getBoard().length);
+					location = Math.floor(Math.random() * shipBoard.getShipBoard().length);
 				}
 
 				// function that determines if the ship should be vertical or horizontal on the board 
@@ -229,13 +332,13 @@ angular.module('gameApp', ['ngRoute'])
 				function verifyPlacement(ship) {
 					var viable;
 					// converts the board position to coordinates
-					var coords = board.posToCoordinates(location, size);
+					var coords = shipBoard.posToCoordinates(location, size);
 					
 					// first check if the ship is horizontal and the end of the ship is within the boundries of the board
 					if (verticalOrHorizontal === 0 && coords.x + ship.shipLength < size + 1) {
 						for (i = 0; i < ship.shipLength; i++) {	
 							// then check if the ship will overlap with other ships
-							if (board.getBoard()[location + i] !== "") {
+							if (shipBoard.getShipBoard()[location + i] !== "") {
 								// if so, the location is not viable
 								viable = false;
 							}
@@ -244,10 +347,11 @@ angular.module('gameApp', ['ngRoute'])
 					} else if (verticalOrHorizontal === 1 && coords.y + ship.shipLength < size + 1) {
 						for (i = 0; i < ship.shipLength; i++) {	
 							// if there is overlap with other ships the position is not viable
-							if (board.getBoard()[location + i * size]) {
+							if (shipBoard.getShipBoard()[location + i * size]) {
 								viable = false;
 							}
 						}
+
 					// if the ship is not within the boundries of the board, the position is not viable
 					} else {
 						viable = false;
@@ -259,7 +363,6 @@ angular.module('gameApp', ['ngRoute'])
 						return viable;
 					}
 				}
-	
 			}
 		};
 	}])
@@ -361,6 +464,7 @@ angular.module('gameApp', ['ngRoute'])
 			},
 			// retreives the list of players
 			getPlayers: function() {
+				console.log(players);
 				return players;
 			},
 			// returns a list of empty player objects of length equal to the number provided
@@ -415,9 +519,7 @@ angular.module('gameApp', ['ngRoute'])
 				if (valid === false) {
 					return false;
 				}
-				else {
-					return true;
-				}
+				return true;
 			}
 		};
 	}]);
